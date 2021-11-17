@@ -11,7 +11,63 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <asm.version>8.0.1</asm.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <artifactId>asm</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>asm-tree</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>asm-analysis</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>asm-commons</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>asm-util</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>asm-xml</artifactId>
+                <groupId>org.ow2.asm</groupId>
+                <version>${asm.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    
+    <dependencies>
+        <dependency>
+            <artifactId>asm-commons</artifactId>
+            <groupId>org.ow2.asm</groupId>
+            <version>${asm.version}</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>asm-util</artifactId>
+            <groupId>org.ow2.asm</groupId>
+            <version>${asm.version}</version>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
