@@ -45,11 +45,28 @@ public class JMTraceTransformer implements ClassFileTransformer {
                     super.visitMethod(access, name, descriptor, signature, exceptions)) {
                 @Override
                 public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-                    super.visitFieldInsn(opcode, owner, name, descriptor);
                     if (!inUserPkg(owner)) {
+                        super.visitFieldInsn(opcode, owner, name, descriptor);
                         return;
                     }
-                    JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    if (opcode == Opcodes.GETFIELD) {
+                        this.mv.visitInsn(Opcodes.DUP);
+                        super.visitFieldInsn(opcode, owner, name, descriptor);
+                        this.mv.visitInsn(Opcodes.SWAP);
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    }
+                    if (opcode == Opcodes.GETSTATIC) {
+                        super.visitFieldInsn(opcode, owner, name, descriptor);  // T.g 这种情况，reference是什么？
+                        this.mv.visitInsn(Opcodes.ACONST_NULL);
+//                        System.out.println(descriptor);
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    }
+                    if (opcode == Opcodes.PUTSTATIC || opcode == Opcodes.PUTFIELD) {
+                        super.visitFieldInsn(opcode, owner, name, descriptor);
+//                        this.mv.visitInsn(Opcodes.DUP);
+                        this.mv.visitInsn(Opcodes.ACONST_NULL);
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    }
                 }
                 // TODO: *ASTORE, *ALOAD
             };
@@ -61,24 +78,28 @@ public class JMTraceTransformer implements ClassFileTransformer {
      */
     public static class JMTracePrinterGen {
         final static String className =  "iser21/jmtrace/JMTraceTransformer$JMTracePrinterGen";
-        final static String desc = "(ZLjava/lang/Object;Ljava/lang/String;Ljava/lang/String;I)V";
+        final static String desc = "(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/String;I)V";
         final static String bool_desc = "(Z)V";
+        // 有问题，这里其实不关注discriptor，因为它只是field. 这里进来的array访问，都是从object中取arr得到的.
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
             // add param into stack
             boolean isRead = opcode==Opcodes.GETFIELD||opcode==Opcodes.GETSTATIC;
             boolean isStatic = opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC;
             boolean isArray = descriptor.startsWith("[");
-            Object obj = null;
+
+//            if (isStatic) {
+//                methodVisitor.visitInsn(Opcodes.ACONST_NULL);
+//            } else {
+//                methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
+//                methodVisitor.visitInsn(Opcodes.ACONST_NULL);  // TODO: changed to visited object
+//            }
+
             if (isRead) {
                 methodVisitor.visitInsn(Opcodes.ICONST_1);
             } else {
                 methodVisitor.visitInsn(Opcodes.ICONST_0);
             }
-            if (isStatic) {
-                methodVisitor.visitInsn(Opcodes.ACONST_NULL);
-            } else {
-                methodVisitor.visitInsn(Opcodes.ACONST_NULL);  // TODO: changed to visited object
-            }
+
             methodVisitor.visitLdcInsn(owner);
             methodVisitor.visitLdcInsn(name);
             if (isArray) {
@@ -94,8 +115,8 @@ public class JMTraceTransformer implements ClassFileTransformer {
             System.out.println("Here! " + readFlag);
         }
         // will be instrumented with invokestatic to print thrd-id and object id
-        public static void printMemoryTrace(boolean readFlag,
-                                      Object obj, String className, String fieldName,
+        public static void printMemoryTrace(Object obj, boolean readFlag,
+                                      String className, String fieldName,
                                       int arrayIndex
                                       ) {
             String longFieldName = className + '.' + fieldName;
@@ -118,7 +139,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
 
         public static void main(String[] args) {
             Object o = new Object();
-            printMemoryTrace(true, o, JMTracePrinterGen.className, "className", 0);
+//            printMemoryTrace(true, o, JMTracePrinterGen.className, "className", 0);
         }
     }
 
