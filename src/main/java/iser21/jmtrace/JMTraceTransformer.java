@@ -16,12 +16,17 @@ public class JMTraceTransformer implements ClassFileTransformer {
             System.out.println("printer is here!!!");
         }
     }
-    private static class JMTraceVisitor extends MethodVisitor {
+    private static class JMTraceAdaptor extends ClassVisitor {
 
-        public JMTraceVisitor(int api, ClassVisitor classVisitor) {
-            // super(api, classVisitor);
+        public JMTraceAdaptor(int api, ClassVisitor clzVisitor) {
+            super(api, clzVisitor);  // this.cv = clzVisitor
         }
 
+//        @Override
+//        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+//
+//            return;
+//        }
     }
     public byte[]
     transform(ClassLoader loader,
@@ -36,9 +41,11 @@ public class JMTraceTransformer implements ClassFileTransformer {
             }
         System.out.println("I'm here! " + className);
         ClassReader clzReader = new ClassReader(classfileBuffer);
+        // first param `clzReader` is for optimization: do not parse when need no transformation
         ClassWriter clzWriter = new ClassWriter(clzReader, ClassWriter.COMPUTE_FRAMES);
-        // ClassVisitor clzVisitor = new JMTraceVisitor(clzWriter);
-        return classfileBuffer;
+        clzReader.accept(new JMTraceAdaptor(Opcodes.ASM8, clzWriter), 0);
+//        clzReader.accept(clzWriter, 0);
+        return clzWriter.toByteArray();
     }
 }
 
