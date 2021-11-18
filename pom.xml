@@ -93,20 +93,6 @@
                         </configuration>
                     </execution>
                 </executions>
-<!--                <artifactId>maven-jar-plugin</artifactId>-->
-<!--                <version>2.6</version>-->
-<!--                <configuration>-->
-<!--                    <archive>-->
-<!--                        <manifest>-->
-<!--                            <addClasspath>true</addClasspath>-->
-<!--                        </manifest>-->
-<!--                        <manifestEntries>-->
-<!--                            <premain-class>iser21.jmtrace.JMTraceAgent</premain-class>-->
-<!--                            <Can-Redefine-Classes>true</Can-Redefine-Classes>-->
-<!--                            <Can-Retransform-Classes>true</Can-Retransform-Classes>-->
-<!--                        </manifestEntries>-->
-<!--                    </archive>-->
-<!--                </configuration>-->
             </plugin>
         </plugins>
     </build>
