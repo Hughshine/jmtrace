@@ -1,7 +1,7 @@
 package example;
 
 class A {
-    int f;
+    long f;
     static int g;
     int[] arr = new int[10];
 }

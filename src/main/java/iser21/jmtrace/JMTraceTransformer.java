@@ -45,6 +45,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
                     super.visitMethod(access, name, descriptor, signature, exceptions)) {
                 @Override
                 public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+                    boolean isLongFormat = descriptor.startsWith("F") || descriptor.startsWith("J");
                     if (!inUserPkg(owner)) {
                         super.visitFieldInsn(opcode, owner, name, descriptor);
                         return;
@@ -55,7 +56,14 @@ public class JMTraceTransformer implements ClassFileTransformer {
                         // objref, objref
                         super.visitFieldInsn(opcode, owner, name, descriptor);
                         // objref, value
-                        this.mv.visitInsn(Opcodes.SWAP);
+                        if (!isLongFormat) {
+                            this.mv.visitInsn(Opcodes.SWAP);
+                        } else {
+                            // objref, value
+                            this.mv.visitInsn(Opcodes.DUP2_X1);
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // value, objref
+                        }
                         // value, objref
                         JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
@@ -65,16 +73,44 @@ public class JMTraceTransformer implements ClassFileTransformer {
                         JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
                     if (opcode == Opcodes.PUTFIELD) {
-                        // objref, value
-                        this.mv.visitInsn(Opcodes.SWAP);
-                        this.mv.visitInsn(Opcodes.DUP_X1);
-                        this.mv.visitInsn(Opcodes.SWAP);
-                        // objref, objref, value
+                        if (!isLongFormat) {
+                            // objref, value
+                            this.mv.visitInsn(Opcodes.SWAP);
+                            // value, objref
+                            this.mv.visitInsn(Opcodes.DUP_X1);
+                            // objref, value, objref
+                            this.mv.visitInsn(Opcodes.SWAP);
+                            // objref, objref, value
+                        } else {
+                            // objref, value
+                            this.mv.visitInsn(Opcodes.DUP2_X1);
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // value, objref
+                            this.mv.visitInsn(Opcodes.DUP_X2);
+                            this.mv.visitInsn(Opcodes.DUP_X2);
+                            // objref, objref, value, objref
+                            this.mv.visitInsn(Opcodes.POP);
+                        }
                         super.visitFieldInsn(opcode, owner, name, descriptor);
                         JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
                 }
+
                 // TODO: *ASTORE, *ALOAD
+//                @Override
+//                public void visitInsn(int opcode) {
+//                    if (opcode == Opcodes.ALOAD) {
+//
+//                    } else if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
+//
+//                    }
+//                    if (opcode == Opcodes.ASTORE) {
+//
+//                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
+//
+//                    }
+//                    super.visitInsn(opcode);
+//                }
             };
         }
     }
@@ -90,15 +126,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
             // add param into stack
             boolean isRead = opcode==Opcodes.GETFIELD||opcode==Opcodes.GETSTATIC;
-            boolean isStatic = opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC;
             boolean isArray = descriptor.startsWith("[");
-
-//            if (isStatic) {
-//                methodVisitor.visitInsn(Opcodes.ACONST_NULL);
-//            } else {
-//                methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
-//                methodVisitor.visitInsn(Opcodes.ACONST_NULL);  // TODO: changed to visited object
-//            }
 
             if (isRead) {
                 methodVisitor.visitInsn(Opcodes.ICONST_1);
@@ -117,7 +145,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
             methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, JMTracePrinterGen.className, "printMemoryTrace"
                     , desc,false);
         }
-        // will be instrumented with invokestatic to print thrd-id and object id
+        // will be instrumented with `invokestatic`
         public static void printMemoryTrace(Object obj, boolean readFlag,
                                       String className, String fieldName,
                                       int arrayIndex
