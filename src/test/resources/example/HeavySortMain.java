@@ -19,7 +19,7 @@ import example.HeavySort.ArrayFactory;
 public class HeavySortMain {
 
     public static void main(String [] args){
-        int problemSize = 100;
+        int  problemSize = 100;
         int numThreads = 6;
         Random random = new Random();
         Integer[] sortArray = new Integer[problemSize];

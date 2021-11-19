@@ -5,7 +5,6 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
 import org.objectweb.asm.*;
-import org.objectweb.asm.commons.Method;
 
 public class JMTraceTransformer implements ClassFileTransformer {
 
@@ -108,7 +107,6 @@ public class JMTraceTransformer implements ClassFileTransformer {
                     }
                 }
 
-                // TODO: *ASTORE, *ALOAD
                 /** ASTORE & ALOAD are not shared memory access, therefore not taken into consideration */
                 @Override
                 public void visitInsn(int opcode) {
