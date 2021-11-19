@@ -112,24 +112,66 @@ public class JMTraceTransformer implements ClassFileTransformer {
                 /** ASTORE & ALOAD are not shared memory access, therefore not taken into consideration */
                 @Override
                 public void visitInsn(int opcode) {
-//                    if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
-//                        if (opcode == Opcodes.FALOAD || opcode == Opcodes.DALOAD) {  // long format
-//
-//                        } else {
-//                            // arrRef, index
-//                            this.mv.visitInsn(Opcodes.DUP2);
-//                            // arrRef, index, arrRef, index
-//                        }
-//                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
-//                        if (opcode == Opcodes.FASTORE || opcode == Opcodes.DASTORE) {
-//
-//                        } else {
-//
-//                        }
-//                    }
-                    super.visitInsn(opcode);
-                    // arrRef, index, value
-//                    JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                    if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
+                        if (opcode == Opcodes.FALOAD || opcode == Opcodes.DALOAD) {  // long format
+                            // arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2);
+                            // arrRef, index, arrRef, index
+                            super.visitInsn(opcode);
+                            // arrRef, index, value
+                            this.mv.visitInsn(Opcodes.DUP2_X2);
+                            // value, arrRef, index, value
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // value, arrRef, index
+                        } else {
+                            // arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2);
+                            // arrRef, index, arrRef, index
+                            super.visitInsn(opcode);
+                            // arrRef, index, value
+                            super.visitInsn(Opcodes.DUP_X2);
+                            super.visitInsn(Opcodes.POP);
+                            // value, arrRef, index
+                        }
+                        // value, arrRef, index
+                        JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                        // value
+                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
+                        /** seems have to instrument before memory access with only `dup` instruction */
+                        if (opcode == Opcodes.FASTORE || opcode == Opcodes.DASTORE) {
+                            // arrRef, index, value
+                            this.mv.visitInsn(Opcodes.DUP2_X2);
+                            // value, arrRef, index, value
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // value, arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2);
+                            // value, arrRef, index, arrRef, index
+                            JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                            // value, arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2_X2);
+                            // arrRef, index, value, arrRef, index
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // arrRef, index, value
+                            super.visitInsn(opcode);
+                        } else {
+                            // arrRef, index, value
+                            this.mv.visitInsn(Opcodes.DUP_X2);
+                            // value, arrRef, index, value
+                            this.mv.visitInsn(Opcodes.POP);
+                            // value, arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2);
+                            // value, arrRef, index, arrRef, index
+                            JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                            // value, arrRef, index
+                            this.mv.visitInsn(Opcodes.DUP2_X1);
+                            // arrRef, index, value, arrRef, index
+                            this.mv.visitInsn(Opcodes.POP2);
+                            // arrRef, index, value
+                            super.visitInsn(opcode);
+                        }
+                    } else {
+                        super.visitInsn(opcode);
+                    }
                 }
             };
         }
@@ -145,7 +187,8 @@ public class JMTraceTransformer implements ClassFileTransformer {
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
 //            methodVisitor.visitInsn(Opcodes.ICONST_0);  // arr index
             // add param into stack: [obj, arrIndex], isRead, owner, name
-            boolean isRead = opcode==Opcodes.GETFIELD||opcode==Opcodes.GETSTATIC;
+            boolean isRead = opcode==Opcodes.GETFIELD || opcode==Opcodes.GETSTATIC
+                    || (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD);
 
             if (isRead) {
                 methodVisitor.visitInsn(Opcodes.ICONST_1);
