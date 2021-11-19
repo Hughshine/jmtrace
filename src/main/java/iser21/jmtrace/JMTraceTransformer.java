@@ -65,12 +65,19 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // value, objref
                         }
                         // value, objref
+                        this.mv.visitInsn(Opcodes.ICONST_M1);
+                        // value, objref, arrIndex
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
-                    if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
+                    else if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
                         super.visitFieldInsn(opcode, owner, name, descriptor);
                         this.mv.visitInsn(Opcodes.ACONST_NULL);
+                        // null
+                        this.mv.visitInsn(Opcodes.ICONST_M1);
+                        // null, arrIndex
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
-                    if (opcode == Opcodes.PUTFIELD) {
+                    else if (opcode == Opcodes.PUTFIELD) {
                         if (!isLongFormat) {
                             // objref, value
                             this.mv.visitInsn(Opcodes.SWAP);
@@ -91,22 +98,38 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // objref, objref, value
                         }
                         super.visitFieldInsn(opcode, owner, name, descriptor);
+                        // objref
+                        this.mv.visitInsn(Opcodes.ICONST_M1);
+                        // objref, arrIndex
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
-                    // objref
-                    this.mv.visitInsn(Opcodes.ICONST_M1);
-                    // objref, arrIndex
-                    JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    else {
+                        super.visitFieldInsn(opcode, owner, name, descriptor);
+                    }
                 }
 
                 // TODO: *ASTORE, *ALOAD
                 /** ASTORE & ALOAD are not shared memory access, therefore not taken into consideration */
                 @Override
                 public void visitInsn(int opcode) {
-                    if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
-
-                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
-                    }
+//                    if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
+//                        if (opcode == Opcodes.FALOAD || opcode == Opcodes.DALOAD) {  // long format
+//
+//                        } else {
+//                            // arrRef, index
+//                            this.mv.visitInsn(Opcodes.DUP2);
+//                            // arrRef, index, arrRef, index
+//                        }
+//                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
+//                        if (opcode == Opcodes.FASTORE || opcode == Opcodes.DASTORE) {
+//
+//                        } else {
+//
+//                        }
+//                    }
                     super.visitInsn(opcode);
+                    // arrRef, index, value
+//                    JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
                 }
             };
         }
