@@ -15,7 +15,3 @@ clean:
 	Remove-Item ./example/*.class
 	rm output/example.jar
 
-
-# build & generate agent.jar
-# run test
-

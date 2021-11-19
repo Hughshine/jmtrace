@@ -113,7 +113,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
                 @Override
                 public void visitInsn(int opcode) {
                     if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
-                        if (opcode == Opcodes.FALOAD || opcode == Opcodes.DALOAD) {  // long format
+                        if (opcode == Opcodes.LALOAD || opcode == Opcodes.DALOAD) {  // long format
                             // arrRef, index
                             this.mv.visitInsn(Opcodes.DUP2);
                             // arrRef, index, arrRef, index
@@ -134,11 +134,11 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // value, arrRef, index
                         }
                         // value, arrRef, index
-                        JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                        JMTracePrinterGen.instrument(this.mv, opcode, "java.lang.Object", "", "[]");
                         // value
                     } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
                         /** seems have to instrument before memory access with only `dup` instruction */
-                        if (opcode == Opcodes.FASTORE || opcode == Opcodes.DASTORE) {
+                        if (opcode == Opcodes.LASTORE || opcode == Opcodes.DASTORE) {
                             // arrRef, index, value
                             this.mv.visitInsn(Opcodes.DUP2_X2);
                             // value, arrRef, index, value
@@ -146,7 +146,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // value, arrRef, index
                             this.mv.visitInsn(Opcodes.DUP2);
                             // value, arrRef, index, arrRef, index
-                            JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                            JMTracePrinterGen.instrument(this.mv, opcode, "java.lang.Object", "", "[]");
                             // value, arrRef, index
                             this.mv.visitInsn(Opcodes.DUP2_X2);
                             // arrRef, index, value, arrRef, index
@@ -161,7 +161,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // value, arrRef, index
                             this.mv.visitInsn(Opcodes.DUP2);
                             // value, arrRef, index, arrRef, index
-                            JMTracePrinterGen.instrument(this.mv, opcode, "arrOwner", "arr", "[]");
+                            JMTracePrinterGen.instrument(this.mv, opcode, "java.lang.Object", "", "[]");
                             // value, arrRef, index
                             this.mv.visitInsn(Opcodes.DUP2_X1);
                             // arrRef, index, value, arrRef, index
@@ -187,6 +187,10 @@ public class JMTraceTransformer implements ClassFileTransformer {
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
 //            methodVisitor.visitInsn(Opcodes.ICONST_0);  // arr index
             // add param into stack: [obj, arrIndex], isRead, owner, name
+            boolean isTargetNotPrimitive = false;
+            if (descriptor.startsWith("[") || descriptor.startsWith("L") ) {
+                isTargetNotPrimitive = true;
+            }
             boolean isRead = opcode==Opcodes.GETFIELD || opcode==Opcodes.GETSTATIC
                     || (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD);
 
@@ -204,11 +208,13 @@ public class JMTraceTransformer implements ClassFileTransformer {
         }
         // will be instrumented with `invokestatic`
         // obj & arrIndex can only be known dynamically, as first two parameters
+        // TODO: print target obj identityHash, to recognize arr access -- not className or fieldName for it
+        // -- Need another dynamic parameter.
         public static void printMemoryTrace(Object obj, int arrayIndex,
                                             boolean readFlag, String className,
                                             String fieldName
                                       ) {
-            String longFieldName = className + '.' + fieldName;
+            String longFieldName = fieldName==""?className:className + '.' + fieldName;
             if (obj != null && arrayIndex < 0) {
                 System.out.printf("%s %d %08x%08x %s\n", readFlag ? 'R' : 'W',
                         Thread.currentThread().getId(), System.identityHashCode(obj),
@@ -228,7 +234,8 @@ public class JMTraceTransformer implements ClassFileTransformer {
 
         public static void main(String[] args) {
             Object o = new Object();
-//            printMemoryTrace(true, o, JMTracePrinterGen.className, "className", 0);
+            printMemoryTrace(o, -1, true, JMTracePrinterGen.className, "fieldName");
+
         }
     }
 
