@@ -65,12 +65,10 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             // value, objref
                         }
                         // value, objref
-                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
                     if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
                         super.visitFieldInsn(opcode, owner, name, descriptor);
                         this.mv.visitInsn(Opcodes.ACONST_NULL);
-                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
                     if (opcode == Opcodes.PUTFIELD) {
                         if (!isLongFormat) {
@@ -90,27 +88,26 @@ public class JMTraceTransformer implements ClassFileTransformer {
                             this.mv.visitInsn(Opcodes.DUP_X2);
                             // objref, objref, value, objref
                             this.mv.visitInsn(Opcodes.POP);
+                            // objref, objref, value
                         }
                         super.visitFieldInsn(opcode, owner, name, descriptor);
-                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
+                    // objref
+                    this.mv.visitInsn(Opcodes.ICONST_M1);
+                    // objref, arrIndex
+                    JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                 }
 
                 // TODO: *ASTORE, *ALOAD
-//                @Override
-//                public void visitInsn(int opcode) {
-//                    if (opcode == Opcodes.ALOAD) {
-//
-//                    } else if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
-//
-//                    }
-//                    if (opcode == Opcodes.ASTORE) {
-//
-//                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
-//
-//                    }
-//                    super.visitInsn(opcode);
-//                }
+                /** ASTORE & ALOAD are not shared memory access, therefore not taken into consideration */
+                @Override
+                public void visitInsn(int opcode) {
+                    if (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD) {
+
+                    } else if (opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE) {
+                    }
+                    super.visitInsn(opcode);
+                }
             };
         }
     }
@@ -120,13 +117,12 @@ public class JMTraceTransformer implements ClassFileTransformer {
      */
     public static class JMTracePrinterGen {
         final static String className =  "iser21/jmtrace/JMTraceTransformer$JMTracePrinterGen";
-        final static String desc = "(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/String;I)V";
+        final static String desc = "(Ljava/lang/Object;IZLjava/lang/String;Ljava/lang/String;)V";
 
-        // 有问题，这里其实不关注discriptor，因为它只是field. 这里进来的array访问，都是从object中取arr得到的.
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
-            // add param into stack
+//            methodVisitor.visitInsn(Opcodes.ICONST_0);  // arr index
+            // add param into stack: [obj, arrIndex], isRead, owner, name
             boolean isRead = opcode==Opcodes.GETFIELD||opcode==Opcodes.GETSTATIC;
-            boolean isArray = descriptor.startsWith("[");
 
             if (isRead) {
                 methodVisitor.visitInsn(Opcodes.ICONST_1);
@@ -136,19 +132,15 @@ public class JMTraceTransformer implements ClassFileTransformer {
 
             methodVisitor.visitLdcInsn(owner);
             methodVisitor.visitLdcInsn(name);
-            if (isArray) {
-                methodVisitor.visitInsn(Opcodes.ICONST_M1);  // TODO: pass array index
-            } else {
-                methodVisitor.visitInsn(Opcodes.ICONST_M1);
-            }
 
             methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, JMTracePrinterGen.className, "printMemoryTrace"
                     , desc,false);
         }
         // will be instrumented with `invokestatic`
-        public static void printMemoryTrace(Object obj, boolean readFlag,
-                                      String className, String fieldName,
-                                      int arrayIndex
+        // obj & arrIndex can only be known dynamically, as first two parameters
+        public static void printMemoryTrace(Object obj, int arrayIndex,
+                                            boolean readFlag, String className,
+                                            String fieldName
                                       ) {
             String longFieldName = className + '.' + fieldName;
             if (obj != null && arrayIndex < 0) {
