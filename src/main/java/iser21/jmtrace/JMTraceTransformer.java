@@ -50,21 +50,27 @@ public class JMTraceTransformer implements ClassFileTransformer {
                         return;
                     }
                     if (opcode == Opcodes.GETFIELD) {
+                        // objref
                         this.mv.visitInsn(Opcodes.DUP);
+                        // objref, objref
                         super.visitFieldInsn(opcode, owner, name, descriptor);
+                        // objref, value
                         this.mv.visitInsn(Opcodes.SWAP);
+                        // value, objref
                         JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
-                    if (opcode == Opcodes.GETSTATIC) {
-                        super.visitFieldInsn(opcode, owner, name, descriptor);  // T.g 这种情况，reference是什么？
-                        this.mv.visitInsn(Opcodes.ACONST_NULL);
-//                        System.out.println(descriptor);
-                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
-                    }
-                    if (opcode == Opcodes.PUTSTATIC || opcode == Opcodes.PUTFIELD) {
+                    if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC) {
                         super.visitFieldInsn(opcode, owner, name, descriptor);
-//                        this.mv.visitInsn(Opcodes.DUP);
                         this.mv.visitInsn(Opcodes.ACONST_NULL);
+                        JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
+                    }
+                    if (opcode == Opcodes.PUTFIELD) {
+                        // objref, value
+                        this.mv.visitInsn(Opcodes.SWAP);
+                        this.mv.visitInsn(Opcodes.DUP_X1);
+                        this.mv.visitInsn(Opcodes.SWAP);
+                        // objref, objref, value
+                        super.visitFieldInsn(opcode, owner, name, descriptor);
                         JMTracePrinterGen.instrument(this.mv, opcode, owner, name, descriptor);
                     }
                 }
@@ -79,7 +85,7 @@ public class JMTraceTransformer implements ClassFileTransformer {
     public static class JMTracePrinterGen {
         final static String className =  "iser21/jmtrace/JMTraceTransformer$JMTracePrinterGen";
         final static String desc = "(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/String;I)V";
-        final static String bool_desc = "(Z)V";
+
         // 有问题，这里其实不关注discriptor，因为它只是field. 这里进来的array访问，都是从object中取arr得到的.
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
             // add param into stack
@@ -111,9 +117,6 @@ public class JMTraceTransformer implements ClassFileTransformer {
             methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, JMTracePrinterGen.className, "printMemoryTrace"
                     , desc,false);
         }
-        public static void printBool(boolean readFlag) {
-            System.out.println("Here! " + readFlag);
-        }
         // will be instrumented with invokestatic to print thrd-id and object id
         public static void printMemoryTrace(Object obj, boolean readFlag,
                                       String className, String fieldName,
@@ -123,17 +126,17 @@ public class JMTraceTransformer implements ClassFileTransformer {
             if (obj != null && arrayIndex < 0) {
                 System.out.printf("%s %d %08x%08x %s\n", readFlag ? 'R' : 'W',
                         Thread.currentThread().getId(), System.identityHashCode(obj),
-                        System.identityHashCode(longFieldName), longFieldName);
+                        longFieldName.hashCode(), longFieldName);
             } else if (obj != null && arrayIndex >= 0) {
                 System.out.printf("%s %d %08x%08x %s[%d]\n", readFlag ? 'R' : 'W',
                         Thread.currentThread().getId(), System.identityHashCode(obj),
-                        System.identityHashCode(longFieldName+arrayIndex), longFieldName, arrayIndex);
+                        (longFieldName+arrayIndex).hashCode(), longFieldName, arrayIndex);
             } else if (obj == null && arrayIndex < 0) {
                 System.out.printf("%s %d 00000000%08x %s\n", readFlag ? 'R' : 'W',
-                        Thread.currentThread().getId(), System.identityHashCode(longFieldName), longFieldName);
+                        Thread.currentThread().getId(), longFieldName.hashCode(), longFieldName);
             } else {
                 System.out.printf("%s %d 00000000%08x %s[%d]\n", readFlag ? 'R' : 'W',
-                        Thread.currentThread().getId(), System.identityHashCode(longFieldName+arrayIndex), longFieldName, arrayIndex);
+                        Thread.currentThread().getId(), (longFieldName+arrayIndex).hashCode(), longFieldName, arrayIndex);
             }
         }
 
