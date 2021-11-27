@@ -5,13 +5,11 @@
 		 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- parent pom -->
     <groupId>com.iser21</groupId>
     <artifactId>jmtrace</artifactId>
     <packaging>pom</packaging>
     <version>1.0</version>
 
-    <!-- sub modules -->
     <modules>
         <module>agent</module>
         <module>example</module>
