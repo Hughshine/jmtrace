@@ -1,0 +1,1 @@
+java -javaagent:agent/target/jmtrace-agent-1.0.jar @args
