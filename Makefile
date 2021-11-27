@@ -1,6 +1,7 @@
 all:
 	mvn package
-	java -javaagent:target/jmtrace-1.0.jar -jar output/example.jar
+	java -javaagent:agent/target/jmtrace-agent-1.0.jar -jar example/target/heavysort-1.0.jar
+#java -javaagent:target/jmtrace-1.0.jar -jar output/example.jar
 
 test: example/Main.java 
 	java -jar ./output/example.jar
