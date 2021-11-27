@@ -41,8 +41,9 @@ make clean
 And a command line interface `jmtrace` (for both windows & linux users): 
 
 ```
-$ jmtrace -jar hello.jar "hello world"
-# run agent with any executable jar
+$ chmod +x jmtrace
+$ ./jmtrace -jar hello.jar "hello world"
+# run agent with any executable jar & params
 ```
 
 ***
@@ -51,6 +52,8 @@ $ jmtrace -jar hello.jar "hello world"
 
 * jvm's support for `-javaagent`: `premain` method & `java.lang.Instrument`. Interface given by jvm to hijack jvm bytecode class-loading procedure.
 * `ASM`: A library for jvm bytecode handling.
+
+***
 
 ## Takeaway
 
