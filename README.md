@@ -4,6 +4,10 @@ Hijack jvm's class-loading (as a javaagent) to instrument these instructions (`g
 
 ## build & usage 
 
+Prerequisite: jdk11, maven
+
+Dependency: [asm8](https://asm.ow2.io/)
+
 build & test this project:
 
 ```shell
@@ -34,11 +38,9 @@ make test
 make clean
 ```
 
-And a command line interface `jmtrace` (in python): 
+And a command line interface `jmtrace` (for both windows & linux users): 
 
 ```
-$ jmtrace --help
-...
 $ jmtrace -jar hello.jar "hello world"
 # run agent with any executable jar
 ```
