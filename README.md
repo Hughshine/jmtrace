@@ -41,9 +41,15 @@ make clean
 And a command line interface `jmtrace` (for both windows & linux users): 
 
 ```
+# in linux shell
 $ chmod +x jmtrace
-$ ./jmtrace -jar hello.jar "hello world"
-# run agent with any executable jar & params
+$ ./jmtrace -jar [your-jar].jar <your-params>
+
+# in windows powershell
+$ jmtrace -jar [your-jar].jar <your-params>
+
+# example:
+$ ./jmtrace -jar example/target/heavysort-1.0.jar
 ```
 
 ***
