@@ -13,7 +13,4 @@ public class JMTraceAgent {
     public static void agentmain(String args, Instrumentation inst) {
         throw new UnsupportedOperationException();
     }
-    public static void main(String[] args) {
-        System.out.println("Hello world");
-    }
 }

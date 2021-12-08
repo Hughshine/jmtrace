@@ -182,13 +182,12 @@ public class JMTraceTransformer implements ClassFileTransformer {
         final static String className =  "iser21/jmtrace/JMTraceTransformer$JMTracePrinterGen";
         final static String desc = "(Ljava/lang/Object;IZLjava/lang/String;Ljava/lang/String;)V";
 
+        /** 
+         * add param onto stack:
+         * [obj, arrIndex] (done dynamically by {@link JMTraceAdapter})
+         * [isRead, owner, name] (done statically)
+         */  
         private static void instrument(MethodVisitor methodVisitor, int opcode, String owner, String name, String descriptor) {
-//            methodVisitor.visitInsn(Opcodes.ICONST_0);  // arr index
-            // add param into stack: [obj, arrIndex], isRead, owner, name
-            boolean isTargetNotPrimitive = false;
-            if (descriptor.startsWith("[") || descriptor.startsWith("L") ) {
-                isTargetNotPrimitive = true;
-            }
             boolean isRead = opcode==Opcodes.GETFIELD || opcode==Opcodes.GETSTATIC
                     || (opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD);
 
@@ -204,10 +203,13 @@ public class JMTraceTransformer implements ClassFileTransformer {
             methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, JMTracePrinterGen.className, "printMemoryTrace"
                     , desc,false);
         }
-        // will be instrumented with `invokestatic`
-        // obj & arrIndex can only be known dynamically, as first two parameters
-        // TODO: print target obj identityHash, to recognize arr access -- not className or fieldName for it
-        // -- Need another dynamic parameter.
+
+        /** 
+         * will be instrumented with `invokestatic` around each memory trace.
+         * parameters are prepared by 
+         * {@link #instrument(MethodVisitor, int, String, String, String)}
+         * {@link JMTraceAdaptor#visitMethod(MethodVisitor, int, String, String, String[])}
+         */
         public static void printMemoryTrace(Object obj, int arrayIndex,
                                             boolean readFlag, String className,
                                             String fieldName
@@ -228,12 +230,6 @@ public class JMTraceTransformer implements ClassFileTransformer {
                 System.out.printf("%s %d 00000000%08x %s[%d]\n", readFlag ? 'R' : 'W',
                         Thread.currentThread().getId(), (longFieldName+arrayIndex).hashCode(), longFieldName, arrayIndex);
             }
-        }
-
-        public static void main(String[] args) {
-            Object o = new Object();
-            printMemoryTrace(o, -1, true, JMTracePrinterGen.className, "fieldName");
-
         }
     }
 
