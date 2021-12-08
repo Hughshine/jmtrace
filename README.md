@@ -1,20 +1,22 @@
 # jmtrace
 
 Hijack jvm's class-loading (as a javaagent) to instrument these instructions (`getstatic/putstatic/getfield/putfield/*aload/*astore`), tracing shared memory accesses.
-
 ## build & usage 
 
-Prerequisite: jdk11, maven
+(Tested) Platform: windows / linux (`ubuntu20.04`)
+
+(You should install) Prerequisite: jdk11([windows](https://stackoverflow.com/questions/52511778/how-to-install-openjdk-11-on-windows), [ubuntu](https://stackoverflow.com/questions/52504825/how-to-install-jdk-11-under-ubuntu)), [maven](https://maven.apache.org/install.html)
 
 Dependency: [asm8](https://asm.ow2.io/)
 
 build & test this project:
 
 ```shell
-maven package  # build agent & sample jar 
-java -javaagent:agent/target/jmtrace-agent-1.0.jar -jar example/target/heavysort-1.0.jar  # run sample
-# clean everything up
-maven clean
+mvn package  # build agent & sample jar 
+make test  # run sample with `make`
+# or you can run: 
+# java -javaagent:agent/target/jmtrace-agent-1.0.jar -jar example/target/heavysort-1.0.jar  
+mvn clean  # clean everything up
 ```
 
 sample output:
@@ -30,7 +32,7 @@ R 18 714236659e28baf9 example/HeavySort$SortSubsequence.data
 ...
 ```
 
-We also provide a `Makefile`:
+We also provide a simple `Makefile`:
 
 ```shell
 make
@@ -52,17 +54,7 @@ $ jmtrace -jar [your-jar].jar <your-params>
 $ ./jmtrace -jar example/target/heavysort-1.0.jar
 ```
 
-***
-
 ## related tools
 
 * jvm's support for `-javaagent`: `premain` method & `java.lang.Instrument`. Interface given by jvm to hijack jvm bytecode class-loading procedure.
 * `ASM`: A library for jvm bytecode handling.
-
-***
-
-## Takeaway
-
-1. `maven` & `jar` 
-2. `javaagent`
-3. ASM's mechanism & jvm
